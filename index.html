@@ -4,75 +4,115 @@
     <meta charset="UTF-8">
     <title>マルチURLツール</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-        .input-group { margin-bottom: 15px; }
-        .result-box { background: #f4f4f4; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; }
+        .input-group { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .result-box { background: #fff; padding: 20px; border-radius: 12px; margin-top: 20px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        /* サムネイルのスタイル */
+        #thumbnail { width: 100%; max-width: 320px; border-radius: 8px; margin: 10px 0; display: none; border: 1px solid #eee; }
+        
         .url-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
-        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .url-input { width: 350px; }
-        button { cursor: pointer; padding: 8px 15px; }
+        input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 6px; flex-grow: 1; }
+        .url-input { background: #f0f0f0; color: #555; }
+        
+        button { cursor: pointer; padding: 10px 15px; border-radius: 6px; border: 1px solid #999; background: #eee; }
+        .search-btn { background: #ff0000; color: white; border: none; font-weight: bold; width: 100%; margin-top: 10px; font-size: 1.1em; }
+        .search-btn:hover { background: #cc0000; }
+        
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        label { font-weight: bold; font-size: 0.9em; color: #444; }
     </style>
 </head>
 <body>
 
-    <h2>曲検索＆URL管理ツール</h2>
+    <h2 style="text-align: center;">曲検索＆URL管理ツール</h2>
     
     <div class="input-group">
-        <input type="text" id="song" placeholder="曲名を入力">
-        <input type="text" id="artist" placeholder="作曲者を入力">
-        <button onclick="searchYoutube()" style="background: #ff0000; color: white; border: none;">YouTube検索</button>
+        <label>曲名:</label><br>
+        <input type="text" id="song" placeholder="曲名の一部でもOK">
+        <div style="margin-top:10px;">
+            <label>作曲者（任意）:</label><br>
+            <input type="text" id="artist" placeholder="空欄でも検索できます">
+        </div>
+        <button class="search-btn" onclick="searchYoutube()">YouTubeで検索</button>
     </div>
 
     <div class="result-box">
-        <p><strong>YouTube動画:</strong> <span id="video-title">（未検索）</span></p>
+        <p><strong>検索結果:</strong></p>
+        <span id="video-title" style="display: block; font-weight: bold; color: #333; margin-bottom: 10px;">（未検索）</span>
+        
+        <img id="thumbnail" src="" alt="thumbnail">
+
         <div class="url-row">
             <input type="text" id="url-yt" class="url-input" readonly placeholder="YouTube URL">
             <button onclick="copyUrl('url-yt')">コピー</button>
         </div>
 
-        <p><strong>追加URL 1:</strong></p>
+        <hr>
+
+        <p><label>追加URL 1:</label></p>
         <div class="url-row">
-            <input type="text" id="url-extra1" class="url-input" placeholder="https://online-audio-converter.com/ja/">
+            <input type="text" id="url-extra1" placeholder="関連サイトのURL">
             <button onclick="copyUrl('url-extra1')">コピー</button>
         </div>
 
-        <p><strong>追加URL 2:</strong></p>
+        <p><label>追加URL 2:</label></p>
         <div class="url-row">
-            <input type="text" id="url-extra2" class="url-input" placeholder="https://yt2mp3.sc">
+            <input type="text" id="url-extra2" placeholder="音源配布サイトのURL">
             <button onclick="copyUrl('url-extra2')">コピー</button>
         </div>
     </div>
 
     <script>
-        // ★ここにあなたのAPIキーを貼り付けてください
+        // ★自分のAPIキーに書き換えてください
         const API_KEY = 'AIzaSyDTOKFF3kaFLDYqwFlvbpqHev7AyCh-AsY'; 
 
         async function searchYoutube() {
             const song = document.getElementById('song').value;
             const artist = document.getElementById('artist').value;
-            if (!song) return alert('曲名を入れてね');
 
-            const query = encodeURIComponent(`${song} ${artist}`);
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${API_KEY}&type=video&maxResults=1`;
+            if (!song) {
+                alert('曲名を入力してください！');
+                return;
+            }
+
+            const searchQuery = artist ? `${song} ${artist}` : song;
+            const encodedQuery = encodeURIComponent(searchQuery);
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodedQuery}&key=${API_KEY}&type=video&maxResults=1`;
 
             try {
                 const response = await fetch(url);
                 const data = await response.json();
+
                 if (data.items && data.items.length > 0) {
-                    document.getElementById('video-title').innerText = data.items[0].snippet.title;
-                    document.getElementById('url-yt').value = `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`;
+                    const item = data.items[0];
+                    const snippet = item.snippet;
+
+                    // タイトルを表示
+                    document.getElementById('video-title').innerText = snippet.title;
+                    
+                    // URLを表示
+                    document.getElementById('url-yt').value = `https://www.youtube.com/watch?v=${item.id.videoId}`;
+                    
+                    // サムネイルを表示
+                    const thumbImg = document.getElementById('thumbnail');
+                    thumbImg.src = snippet.thumbnails.medium.url; // 中サイズの画像を取得
+                    thumbImg.style.display = 'block'; // 非表示を解除
+                    
                 } else {
-                    alert('見つかりませんでした');
+                    alert('動画が見つかりませんでした。');
                 }
-            } catch (e) {
-                alert('エラーが発生しました');
+            } catch (error) {
+                alert('検索中にエラーが発生しました。');
             }
         }
 
-        // 指定されたIDの入力をコピーする共通命令
         function copyUrl(id) {
             const target = document.getElementById(id);
-            if (!target.value) return alert('中身が空だよ！');
+            if (!target.value) {
+                alert('コピーする内容がありません！');
+                return;
+            }
             target.select();
             document.execCommand('copy');
             alert('コピーしました！');
