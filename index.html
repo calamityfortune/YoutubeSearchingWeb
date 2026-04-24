@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube URL検索</title>
+</head>
+<body>
+
+    <h2>YouTube曲検索ツール</h2>
+    <input type="text" id="song" placeholder="曲名を入力">
+    <input type="text" id="artist" placeholder="作曲者を入力">
+    <button onclick="searchYoutube()">検索してURLを表示</button>
+
+    <div id="result" style="margin-top: 20px;">
+        <p id="video-title">ここにタイトルが表示されます</p>
+        <input type="text" id="url-output" readonly style="width: 400px; padding: 5px;">
+        <button onclick="copyUrl()">URLをコピー</button>
+    </div>
+
+    <script>
+        // ★ここにあなたのAPIキーを貼り付けてください
+        const API_KEY = 'AIzaSyDTOKFF3kafLDYqwFlvbpqHev7AyCh-AsY'; 
+
+        async function searchYoutube() {
+            const song = document.getElementById('song').value;
+            const artist = document.getElementById('artist').value;
+
+            if (!song) {
+                alert('曲名を入力してください');
+                return;
+            }
+
+            // 検索キーワードを合体させる
+            const query = encodeURIComponent(`${song} ${artist}`);
+            
+            // YouTubeに「検索結果を1件ください」とお願いするURL
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${API_KEY}&type=video&maxResults=1`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.items && data.items.length > 0) {
+                    const videoId = data.items[0].id.videoId;
+                    const title = data.items[0].snippet.title;
+                    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+                    // 画面に結果を表示する
+                    document.getElementById('video-title').innerText = title;
+                    document.getElementById('url-output').value = videoUrl;
+                } else {
+                    alert('動画が見つかりませんでした。');
+                }
+            } catch (error) {
+                alert('エラーが発生しました。APIキーが正しいか確認してください。');
+            }
+        }
+
+        function copyUrl() {
+            const urlOutput = document.getElementById('url-output');
+            if (!urlOutput.value) return;
+            urlOutput.select();
+            document.execCommand('copy');
+            alert('コピーしました！');
+        }
+    </script>
+
+</body>
+</html>
