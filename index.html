@@ -10,10 +10,17 @@
         #thumbnail { width: 100%; max-width: 320px; border-radius: 8px; border: 1px solid #eee; margin-top: 10px; }
         .url-row { display: flex; align-items: center; margin-top: 10px; gap: 8px; flex-wrap: wrap; }
         input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 6px; flex-grow: 1; min-width: 200px; }
-        button { cursor: pointer; padding: 10px 15px; border-radius: 6px; border: 1px solid #999; background: #eee; }
+        
+        /* ボタンのデザイン */
+        button { cursor: pointer; padding: 10px 15px; border-radius: 6px; border: 1px solid #999; background: #eee; transition: 0.2s; }
+        button:hover { background: #ddd; }
         .search-btn { background: #ff0000; color: white; border: none; font-weight: bold; width: 100%; padding: 12px; font-size: 1.1em; margin-top: 10px; }
-        .link-btn { background: #007bff; color: white; border: none; text-decoration: none; font-size: 0.9em; padding: 10px 15px; border-radius: 6px; text-align: center; }
+        .search-btn:hover { background: #cc0000; }
+        
+        /* リンクボタンのデザイン */
+        .link-btn { background: #007bff; color: white; border: none; text-decoration: none; font-size: 0.9em; padding: 10px 15px; border-radius: 6px; text-align: center; display: none; }
         .link-btn:hover { background: #0056b3; }
+        
         hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
         label { font-weight: bold; font-size: 0.9em; color: #444; }
     </style>
@@ -40,9 +47,9 @@
 
         <label>YouTube URL:</label>
         <div class="url-row">
-            <input type="text" id="url-yt" readonly placeholder="検索するとURLが出ます">
+            <input type="text" id="url-yt" readonly placeholder="検索するとここにURLが出ます">
             <button onclick="copyUrl('url-yt')">コピー</button>
-            <a id="link-yt" class="link-btn" href="#" target="_blank" style="display:none;">サイトへ飛ぶ</a>
+            <a id="link-yt" class="link-btn" href="#" target="_blank">サイトへ飛ぶ</a>
         </div>
 
         <hr>
@@ -51,7 +58,7 @@
         <div class="url-row">
             <input type="text" id="url-extra1" placeholder="https://..." oninput="updateLink(1)">
             <button onclick="copyUrl('url-extra1')">コピー</button>
-            <a id="link-extra1" class="link-btn" href="#" target="_blank" style="display:none;">開く</a>
+            <a id="link-extra1" class="link-btn" href="#" target="_blank">開く</a>
         </div>
 
         <p></p>
@@ -60,18 +67,22 @@
         <div class="url-row">
             <input type="text" id="url-extra2" placeholder="https://..." oninput="updateLink(2)">
             <button onclick="copyUrl('url-extra2')">コピー</button>
-            <a id="link-extra2" class="link-btn" href="#" target="_blank" style="display:none;">開く</a>
+            <a id="link-extra2" class="link-btn" href="#" target="_blank">開く</a>
         </div>
     </div>
 
     <script>
-        // ★自分のAPIキーに書き換えてください
+        // ★ここに自分のAPIキーを貼り付けてください
         const API_KEY = 'AIzaSyDTOKFF3kaFLDYqwFlvbpqHev7AyCh-AsY'; 
 
         async function searchYoutube() {
             const song = document.getElementById('song').value;
             const artist = document.getElementById('artist').value;
-            if (!song) return alert('曲名を入力してください！');
+
+            if (!song) {
+                alert('曲名を入力してください！');
+                return;
+            }
 
             const searchQuery = artist ? `${song} ${artist}` : song;
             const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&key=${API_KEY}&type=video&maxResults=1`;
@@ -82,45 +93,52 @@
 
                 if (data.items && data.items.length > 0) {
                     const video = data.items[0];
-                    const videoUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`;
-                    
+                    const videoId = video.id.videoId;
+                    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+                    // タイトルとサムネイルをセット
                     document.getElementById('video-title').innerText = video.snippet.title;
                     document.getElementById('thumbnail').src = video.snippet.thumbnails.medium.url;
+                    
+                    // URLとリンクボタンをセット
                     document.getElementById('url-yt').value = videoUrl;
-                    
-                    // YouTubeリンクボタンを表示
-                    const linkBtn = document.getElementById('link-yt');
-                    linkBtn.href = videoUrl;
-                    linkBtn.style.display = 'inline-block';
-                    
+                    const ytBtn = document.getElementById('link-yt');
+                    ytBtn.href = videoUrl;
+                    ytBtn.style.display = 'inline-block';
+
                     document.getElementById('video-info').style.display = 'block';
                 } else {
                     alert('動画が見つかりませんでした。');
                 }
             } catch (error) {
-                alert('APIエラーが発生しました。設定を確認してください。');
+                alert('検索に失敗しました。APIの設定を確認してください。');
             }
         }
 
-        // 入力されたURLをリアルタイムでリンクボタンに反映させる
+        // 入力されたURLに応じてリンクボタンを表示・更新する
         function updateLink(num) {
-            const val = document.getElementById(`url-extra${num}`).value;
-            const btn = document.getElementById(`link-extra${num}`);
-            if (val.startsWith('http')) {
-                btn.href = val;
-                btn.style.display = 'inline-block';
+            const inputVal = document.getElementById(`url-extra${num}`).value;
+            const linkBtn = document.getElementById(`link-extra${num}`);
+            
+            if (inputVal.startsWith('http')) {
+                linkBtn.href = inputVal;
+                linkBtn.style.display = 'inline-block';
             } else {
-                btn.style.display = 'none';
+                linkBtn.style.display = 'none';
             }
         }
 
         function copyUrl(id) {
             const target = document.getElementById(id);
-            if (!target.value) return alert('空だよ！');
+            if (!target.value) {
+                alert('コピーする内容がありません！');
+                return;
+            }
             target.select();
             document.execCommand('copy');
             alert('コピーしました！');
         }
     </script>
+
 </body>
 </html>
