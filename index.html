@@ -7,23 +7,22 @@
         body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; }
         .input-group, .result-box { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
         #video-info { display: none; text-align: center; margin-bottom: 20px; }
-        #thumbnail { width: 100%; max-width: 320px; border-radius: 8px; border: 1px solid #eee; margin-top: 10px; }
+        
+        /* サムネイルを大きく綺麗に表示 */
+        #thumbnail { width: 100%; max-width: 480px; border-radius: 8px; border: 1px solid #eee; margin-top: 10px; }
+        
         .url-row { display: flex; align-items: center; margin-top: 10px; gap: 8px; }
         input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 6px; flex-grow: 1; }
         
-        button { cursor: pointer; padding: 10px 15px; border-radius: 6px; border: 1px solid #999; background: #eee; }
-        .search-btn { background: #ff0000; color: white; border: none; font-weight: bold; width: 100%; padding: 12px; font-size: 1.1em; margin-top: 10px; border-radius: 6px; }
+        .search-btn { background: #ff0000; color: white; border: none; font-weight: bold; width: 100%; padding: 12px; font-size: 1.1em; margin-top: 10px; border-radius: 6px; cursor: pointer; }
         
-        /* リンクボタンを大きく押しやすく */
-        .link-btn { 
-            background: #007bff; color: white; border: none; text-decoration: none; 
-            font-size: 0.95em; padding: 10px 20px; border-radius: 6px; text-align: center; 
-            display: none; font-weight: bold; min-width: 120px;
-        }
-        .link-btn:hover { opacity: 0.8; }
-        .download-btn { background: #28a745; } /* 緑 */
-        .convert-btn { background: #6f42c1; }  /* 紫 */
+        /* ハイパーリンクのデザイン */
+        .fixed-link { text-decoration: none; font-weight: bold; font-size: 1.2em; transition: 0.2s; }
+        .fixed-link:hover { opacity: 0.7; }
+        .download-text { color: #28a745; }
+        .convert-text { color: #6f42c1; }
 
+        .copy-btn { cursor: pointer; padding: 10px 15px; border-radius: 6px; border: 1px solid #999; background: #eee; }
         hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
         label { font-weight: bold; font-size: 0.9em; color: #444; }
     </style>
@@ -44,35 +43,31 @@
 
     <div class="result-box">
         <div id="video-info">
-            <strong id="video-title"></strong><br>
+            <strong id="video-title" style="font-size: 1.1em; display: block; margin-bottom: 5px;"></strong>
             <img id="thumbnail" src="" alt="サムネイル">
         </div>
 
         <label>YouTube URL:</label>
         <div class="url-row">
-            <input type="text" id="url-yt" readonly placeholder="検索するとURLが出ます">
-            <button onclick="copyUrl('url-yt')">コピー</button>
-            <a id="link-yt" class="link-btn" href="#" target="_blank">YouTubeを開く</a>
+            <input type="text" id="url-yt" readonly>
+            <button class="copy-btn" onclick="copyUrl('url-yt')">コピー</button>
         </div>
 
         <hr>
 
-        <label>Download:</label>
-<div class="url-row">
-    <a href="https://yt2mp3.sc" target="_blank" style="color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.2em;">Download</a>
-</div>
+        <div style="margin-bottom: 15px;">
+            <label>Download サイト:</label><br>
+            <a href="https://yt2mp3.sc/" target="_blank" class="fixed-link download-text">Download</a>
+        </div>
 
-        <p></p>
-
-        <label>mp3 to wav:</label>
-<div class="url-row">
-    <a href="https://online-audio-converter.com/ja/" target="_blank" style="color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.2em;">Download</a>
-</div>
+        <div>
+            <label>mp3 to wav サイト:</label><br>
+            <a href="https://online-audio-converter.com/ja/" target="_blank" class="fixed-link convert-text">mp3 to wav</a>
+        </div>
     </div>
 
     <script>
-        // ★ここに最新のAPIキーを貼り付けてください
-        const API_KEY = 'AIzaSyC1I3ALsbffg085r2w8nWYGVruHopTBEug'; 
+        const API_KEY = 'AIzaSyC1I3ALsbffg085r2w8nWYGVruHopTBEug'; // 最新のキーに書き換えてください
 
         async function searchYoutube() {
             const song = document.getElementById('song').value;
@@ -86,19 +81,18 @@
                 const response = await fetch(url);
                 const data = await response.json();
 
-                if (data.error) {
-                    alert(`Googleエラー: ${data.error.message}`);
-                    return;
-                }
-
                 if (data.items && data.items.length > 0) {
                     const video = data.items[0];
                     const vUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+                    
                     document.getElementById('video-title').innerText = video.snippet.title;
-                    document.getElementById('thumbnail').src = video.snippet.thumbnails.medium.url;
+                    
+                    // ★画質を「high」または「maxres」に設定
+                    // maxres が無い動画もあるため、まずは high を指定
+                    const thumbs = video.snippet.thumbnails;
+                    document.getElementById('thumbnail').src = (thumbs.maxres ? thumbs.maxres.url : thumbs.high.url);
+                    
                     document.getElementById('url-yt').value = vUrl;
-                    const btn = document.getElementById('link-yt');
-                    btn.href = vUrl; btn.style.display = 'inline-block';
                     document.getElementById('video-info').style.display = 'block';
                 } else {
                     alert('動画が見つかりませんでした。');
@@ -108,22 +102,12 @@
             }
         }
 
-        function updateLink(num) {
-            const val = document.getElementById(`url-extra${num}`).value;
-            const btn = document.getElementById(`link-extra${num}`);
-            if (val.startsWith('http')) {
-                btn.href = val; btn.style.display = 'inline-block';
-            } else {
-                btn.style.display = 'none';
-            }
-        }
-
         function copyUrl(id) {
             const target = document.getElementById(id);
             if (!target.value) return;
             target.select();
             document.execCommand('copy');
-            alert('URLをコピーしたよ！');
+            alert('コピーしました！');
         }
     </script>
 </body>
